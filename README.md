@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DiveGlobe Starter (drop-in files)
 
-## Getting Started
+This folder contains **drop-in files** for a Next.js App Router project. Use it if you’re starting from scratch _or_ want a minimal reference implementation for a 3D globe + Webflow CMS.
+It assumes you’ll create a new Next.js app first and then copy these files over.
 
-First, run the development server:
+## 0) Prereqs (install once)
+- Node.js 20+ and npm (from nodejs.org)
+- Git + GitHub account
+- VS Code (recommended)
 
+## 1) Create a fresh Next.js app
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx create-next-app@latest diveglobe --ts --eslint --app --src-dir --tailwind
+cd diveglobe
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> If you prefer no Tailwind, omit `--tailwind`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 2) Copy these files into your new app
+Copy the folders from **this** zip (`app/`, `components/`, `lib/`, `public/`) into your `diveglobe/` project. If prompted, allow overwriting existing placeholder files.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 3) Install globe dependency
+```bash
+npm install react-globe.gl
+```
 
-## Learn More
+## 4) Configure env vars
+Copy `.env.example` to `.env.local` and fill:
+```
+WEBFLOW_API_TOKEN=YOUR_TOKEN
+WEBFLOW_SITE_ID=your_site_id
+DIVE_COLLECTION_ID=your_collection_id
+NEXT_PUBLIC_BASE_PATH=/app   # match your Webflow Cloud mount path
+```
+> `NEXT_PUBLIC_BASE_PATH` should equal your **Webflow Cloud mount path** (e.g. `/app`).
 
-To learn more about Next.js, take a look at the following resources:
+## 5) Set basePath in Next config
+Edit `next.config.mjs` to include your base/mount path so routes & assets work in Webflow Cloud:
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+};
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+export default nextConfig;
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 6) Run locally
+```bash
+npm run dev
+```
 
-## Deploy on Vercel
+Open http://localhost:3000 and you should see the 3D globe. The globe uses sample dive sites if env vars aren’t set.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 7) Deploy to Webflow Cloud (summary)
+1. Push your repo to GitHub.
+2. In your Webflow site settings → **Webflow Cloud**, connect GitHub and create a Project + Environment.
+3. Set the **Mount path** (e.g. `/app`) and add the env vars in the Environment UI.
+4. Publish your Webflow site, then **Deploy**.
+5. Visit `yourdomain.com/app` (or `yoursite.webflow.io/app`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> See Webflow Cloud docs for full step‑by‑step details.
