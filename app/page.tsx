@@ -1,6 +1,6 @@
 import GlobeClient from '../components/GlobeClient';
 
-export const runtime = 'edge';
+// Use default Node.js runtime locally for OpenNext compatibility
 
 export default function HomePage() {
   return (

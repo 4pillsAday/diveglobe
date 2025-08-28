@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+// Use default Node.js runtime for OpenNext bundling compatibility
 
 import { NextResponse } from 'next/server';
 import { normalizeItem } from '@/lib/webflow';

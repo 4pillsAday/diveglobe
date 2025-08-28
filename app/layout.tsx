@@ -1,6 +1,6 @@
 import './globals.css';
 
-export const runtime = 'edge'; // Prefer edge where possible
+// Use default Node.js runtime locally for OpenNext compatibility
 
 export const metadata = {
   title: 'DiveGlobe',

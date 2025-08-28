@@ -29,7 +29,7 @@ const SAMPLE: DiveSite[] = [
   { id: 'great-barrier', name: 'Great Barrier Reef', lat: -18.2871, lng: 147.6992, country: 'Australia' },
 ];
 
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+const basePath = '/app';
 
 export default function GlobeClient() {
   const [sites, setSites] = useState<DiveSite[]>(SAMPLE);
