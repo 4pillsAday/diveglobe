@@ -1,21 +1,12 @@
-// Use default Node.js runtime for OpenNext bundling compatibility
-
 import { NextResponse } from 'next/server';
-import { normalizeItem } from '@/lib/webflow';
-
-const SAMPLE = [
-  { id: 'raja-ampat', name: 'Raja Ampat', lat: -0.2346, lng: 130.5079, country: 'Indonesia' },
-  { id: 'blue-hole-belize', name: 'Great Blue Hole', lat: 17.3156, lng: -87.5346, country: 'Belize' },
-  { id: 'great-barrier', name: 'Great Barrier Reef', lat: -18.2871, lng: 147.6992, country: 'Australia' },
-];
+import { normalizeItem, FALLBACK_SITES } from '@/lib/webflow';
 
 export async function GET() {
   const token = process.env.WEBFLOW_API_TOKEN;
   const collectionId = process.env.DIVE_COLLECTION_ID;
 
-  // If not configured, return sample data
   if (!token || !collectionId) {
-    return NextResponse.json({ items: SAMPLE });
+    return NextResponse.json({ items: FALLBACK_SITES });
   }
 
   try {
