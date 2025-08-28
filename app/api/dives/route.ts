@@ -1,6 +1,6 @@
 export const runtime = 'edge';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { normalizeItem } from '@/lib/webflow';
 
 const SAMPLE = [
@@ -9,7 +9,7 @@ const SAMPLE = [
   { id: 'great-barrier', name: 'Great Barrier Reef', lat: -18.2871, lng: 147.6992, country: 'Australia' },
 ];
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const token = process.env.WEBFLOW_API_TOKEN;
   const collectionId = process.env.DIVE_COLLECTION_ID;
 
@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
       ? data.items.map(normalizeItem).filter(Boolean)
       : [];
     return NextResponse.json({ items });
-  } catch (e: any) {
-    return NextResponse.json({ error: 'Unexpected error', message: e?.message }, { status: 500 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ error: 'Unexpected error', message }, { status: 500 });
   }
 }

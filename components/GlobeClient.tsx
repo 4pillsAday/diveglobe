@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 type DiveSite = {
@@ -10,6 +10,15 @@ type DiveSite = {
   lng: number;
   country?: string;
   depth?: number | null;
+};
+
+type PointData = {
+  lat: number;
+  lng: number;
+  name: string;
+  color: string;
+  radius: number;
+  altitude: number;
 };
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
@@ -23,7 +32,6 @@ const SAMPLE: DiveSite[] = [
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 export default function GlobeClient() {
-  const globeRef = useRef<any>();
   const [sites, setSites] = useState<DiveSite[]>(SAMPLE);
 
   useEffect(() => {
@@ -48,7 +56,6 @@ export default function GlobeClient() {
 
   return (
     <Globe
-      ref={globeRef}
       width={typeof window !== 'undefined' ? window.innerWidth : 800}
       height={typeof window !== 'undefined' ? window.innerHeight : 600}
       backgroundColor="#0b1220"
@@ -57,11 +64,11 @@ export default function GlobeClient() {
       showAtmosphere
       pointsData={points}
       pointLabel="name"
-      pointColor={(p: any) => p.color}
-      pointAltitude={(p: any) => p.altitude}
-      pointRadius={(p: any) => p.radius}
-      onPointClick={(p: any) => {
-        alert(`${p.name}`);
+      pointColor={(p) => (p as PointData).color}
+      pointAltitude={(p) => (p as PointData).altitude}
+      pointRadius={(p) => (p as PointData).radius}
+      onPointClick={(p) => {
+        alert(`${(p as PointData).name}`);
       }}
     />
   );

@@ -7,10 +7,23 @@ export type DiveSite = {
   depth?: number | null;
 };
 
-export function normalizeItem(item: any): DiveSite | null {
+type WebflowItem = {
+  id?: string;
+  fieldData?: {
+    latitude?: string | number;
+    lat?: string | number;
+    longitude?: string | number;
+    lng?: string | number;
+    name?: string;
+    country?: string;
+    depth?: number;
+  };
+};
+
+export function normalizeItem(item: WebflowItem): DiveSite | null {
   const f = item?.fieldData ?? {};
-  const lat = parseFloat(f.latitude ?? f.lat);
-  const lng = parseFloat(f.longitude ?? f.lng);
+  const lat = parseFloat(String(f.latitude ?? f.lat));
+  const lng = parseFloat(String(f.longitude ?? f.lng));
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return {
     id: item.id ?? `${lat},${lng}`,
