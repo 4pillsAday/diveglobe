@@ -36,7 +36,7 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
   return (
     <main className="dg-container">
       <h1 className="dg-title">Dive Sites</h1>
-      <form className="dg-filters" action={joinBasePath('/dive')}>
+      <form className="dg-filters" method="get">
         <div>
           <label htmlFor="country">Country</label>
           <select id="country" name="country" defaultValue={country || ''}>
