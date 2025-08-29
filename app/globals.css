@@ -48,6 +48,14 @@ body.dg-body { margin: 0; background: linear-gradient(120deg, #041424, #062e42, 
 .dg-iframe { width: 100%; height: 320px; border: 1px solid #17304f; border-radius: 10px; }
 
 /* Home overlay filters */
-.dg-overlay { position: fixed; left: 0; right: 0; top: 64px; z-index: 30; display: flex; justify-content: center; pointer-events: none; }
-.dg-filter-row { pointer-events: all; display: flex; gap: 12px; background: rgba(6,24,38,0.66); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 12px; }
-.dg-filter-row select { background: #0a1a2f; color: #eaf6ff; border: 1px solid #17304f; border-radius: 6px; padding: 8px 10px; }
+.dg-overlay { position: fixed; left: 0; right: 0; top: 64px; z-index: 30; display: flex; justify-content: center; pointer-events: none; padding: 0 8px; }
+.dg-filter-row { pointer-events: all; display: flex; flex-wrap: wrap; gap: 8px; background: rgba(6,24,38,0.66); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 8px; max-width: 100%; }
+.dg-filter-row > div { min-width: 140px; }
+.dg-filter-row select { width: 100%; background: #0a1a2f; color: #eaf6ff; border: 1px solid #17304f; border-radius: 6px; padding: 8px 10px; }
+
+@media (max-width: 640px) {
+  .dg-home { height: auto; min-height: calc(100vh - 120px); }
+  .dg-overlay { top: 56px; }
+  .dg-filter-row { gap: 6px; padding: 6px; }
+  .dg-filter-row > div { min-width: 120px; }
+}
