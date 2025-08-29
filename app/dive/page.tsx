@@ -33,6 +33,7 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
     const okOcean = ocean ? inferOcean(s.lat, s.lng).toLowerCase() === ocean : true;
     return okCountry && okDiff && okCont && okOcean;
   });
+  const ordered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
 
   function sitePassesFilters(s: DiveSiteDetail, skip: 'difficulty' | 'ocean' | 'continent' | 'country' | null): boolean {
     const okDiff = skip === 'difficulty' ? true : (difficulty ? (s.difficulty || '').toLowerCase() === difficulty : true);
@@ -62,7 +63,7 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
         initial={{ difficulty, ocean, continent, country }}
       />
       <ul className="dg-grid">
-        {filtered.length === 0 ? (
+        {ordered.length === 0 ? (
           <li className="dg-card" style={{gridColumn: '1 / -1'}}>
             <div className="dg-card-body">
               <div className="dg-card-header"><h2>No results</h2></div>
@@ -70,7 +71,7 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
             </div>
           </li>
         ) : null}
-        {filtered.map((s) => (
+        {ordered.map((s) => (
           <li key={s.id} className="dg-card">
             <div className="dg-card-body">
               <div className="dg-card-header">
