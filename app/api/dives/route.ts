@@ -16,16 +16,17 @@ export async function GET() {
       // Edge runtime uses WHATWG fetch; no special agent needed
     });
     if (!res.ok) {
-      const text = await res.text();
-      return NextResponse.json({ error: 'Webflow API error', details: text }, { status: 502 });
+      // Fallback to local dataset if Webflow returns an error
+      return NextResponse.json({ items: FALLBACK_SITES });
     }
     const data = await res.json();
     const items = Array.isArray(data.items)
       ? data.items.map(normalizeItem).filter(Boolean)
       : [];
-    return NextResponse.json({ items });
+    // If CMS has no items, fallback to local
+    return NextResponse.json({ items: items.length ? items : FALLBACK_SITES });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unknown error';
-    return NextResponse.json({ error: 'Unexpected error', message }, { status: 500 });
+    // On any unexpected error, return fallback so UI stays populated
+    return NextResponse.json({ items: FALLBACK_SITES });
   }
 }
