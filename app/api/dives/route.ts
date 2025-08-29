@@ -25,7 +25,7 @@ export async function GET() {
       : [];
     // If CMS has no items, fallback to local
     return NextResponse.json({ items: items.length ? items : FALLBACK_SITES });
-  } catch (e) {
+  } catch {
     // On any unexpected error, return fallback so UI stays populated
     return NextResponse.json({ items: FALLBACK_SITES });
   }
