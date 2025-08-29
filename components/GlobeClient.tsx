@@ -76,14 +76,26 @@ export default function GlobeClient() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/api/dives`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d.items) && d.items.length) setSites(d.items);
-      })
-      .catch(() => {
-        // keep SAMPLE
-      });
+    const base = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+    const candidates = [
+      'api/dives',
+      `${base}/api/dives`,
+      '/api/dives',
+    ].filter(Boolean) as string[];
+    (async () => {
+      for (const path of candidates) {
+        try {
+          const res = await fetch(path);
+          if (!res.ok) continue;
+          const d = await res.json();
+          if (Array.isArray(d.items) && d.items.length) {
+            setSites(d.items);
+            return;
+          }
+        } catch {}
+      }
+      // keep SAMPLE if all attempts fail
+    })();
   }, []);
 
   const points = useMemo(() => sites.map(s => ({
