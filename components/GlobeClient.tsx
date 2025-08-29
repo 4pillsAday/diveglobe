@@ -77,11 +77,13 @@ export default function GlobeClient() {
 
   useEffect(() => {
     const base = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const candidates = [
-      'api/dives',
+      `${origin}${base}/api/dives`,
       `${base}/api/dives`,
+      'api/dives',
       '/api/dives',
-    ].filter(Boolean) as string[];
+    ];
     (async () => {
       for (const path of candidates) {
         try {
