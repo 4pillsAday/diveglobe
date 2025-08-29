@@ -1,13 +1,19 @@
-import { joinBasePath, type DiveSiteDetail } from '@/lib/webflow';
+import { joinBasePath, type DiveSiteDetail, FALLBACK_SITES } from '@/lib/webflow';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 
 async function fetchSites(): Promise<DiveSiteDetail[]> {
   try {
-    const res = await fetch(joinBasePath('/api/dives'), { cache: 'no-store' });
+    const h = await headers();
+    const host = h.get('x-forwarded-host') || h.get('host') || 'localhost:3000';
+    const proto = (h.get('x-forwarded-proto') || 'http').split(',')[0];
+    const url = `${proto}://${host}${joinBasePath('/api/dives')}`;
+    const res = await fetch(url, { cache: 'no-store' });
     const data = await res.json();
-    return Array.isArray(data.items) ? (data.items as DiveSiteDetail[]) : [];
+    const items = Array.isArray(data.items) ? (data.items as DiveSiteDetail[]) : [];
+    return items.length ? items : FALLBACK_SITES;
   } catch {
-    return [];
+    return FALLBACK_SITES;
   }
 }
 
@@ -23,12 +29,14 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
   });
 
   const countries = Array.from(new Set(sites.map((s) => s.country).filter(Boolean))) as string[];
+  countries.sort((a, b) => a.localeCompare(b));
   const difficulties = Array.from(new Set(sites.map((s) => s.difficulty).filter(Boolean))) as string[];
+  difficulties.sort((a, b) => String(a).localeCompare(String(b)));
 
   return (
     <main className="dg-container">
       <h1 className="dg-title">Dive Sites</h1>
-      <form className="dg-filters" action={'/dive'}>
+      <form className="dg-filters" action={joinBasePath('/dive')}>
         <div>
           <label htmlFor="country">Country</label>
           <select id="country" name="country" defaultValue={country || ''}>
@@ -52,6 +60,14 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
         </div>
       </form>
       <ul className="dg-grid">
+        {filtered.length === 0 ? (
+          <li className="dg-card" style={{gridColumn: '1 / -1'}}>
+            <div className="dg-card-body">
+              <div className="dg-card-header"><h2>No results</h2></div>
+              <p className="dg-desc">Try clearing filters or selecting a different country/difficulty.</p>
+            </div>
+          </li>
+        ) : null}
         {filtered.map((s) => (
           <li key={s.id} className="dg-card">
             <div className="dg-card-body">

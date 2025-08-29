@@ -1,15 +1,17 @@
 import Image from 'next/image';
-import { joinBasePath, type DiveSiteDetail } from '@/lib/webflow';
+import { joinBasePath, type DiveSiteDetail, FALLBACK_SITES } from '@/lib/webflow';
 
 async function fetchSite(slug: string): Promise<DiveSiteDetail | null> {
   try {
     const res = await fetch(joinBasePath(`/api/dives/${slug}`), { cache: 'no-store' });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.item ?? null;
-  } catch {
-    return null;
-  }
+    if (res.ok) {
+      const data = await res.json();
+      return data.item ?? null;
+    }
+  } catch {}
+  // Fallback to local dataset
+  const local = FALLBACK_SITES.find((s) => s.slug === slug) || null;
+  return local;
 }
 
 export default async function DiveDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -17,7 +19,7 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
   const site = await fetchSite(slug);
   if (!site) {
     return (
-      <main className="dg-container">
+      <main className="dg-container dg-empty">
         <h1>Not found</h1>
         <p>We couldn’t find that dive site.</p>
       </main>
