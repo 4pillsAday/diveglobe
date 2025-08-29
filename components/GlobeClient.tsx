@@ -76,18 +76,21 @@ export default function GlobeClient() {
   const router = useRouter();
 
   useEffect(() => {
-    const base = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+    const envBase = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const candidates = [
-      `${origin}${base}/api/dives`,
-      `${base}/api/dives`,
-      'api/dives',
-      '/api/dives',
-    ];
+    const firstSeg = typeof window !== 'undefined' ? (window.location.pathname.split('/').filter(Boolean)[0] || '') : '';
+    const guessedBase = firstSeg ? `/${firstSeg}` : '';
+    const bases = Array.from(new Set([
+      envBase,
+      guessedBase,
+      '/app',
+      '',
+    ].filter((b) => typeof b === 'string')));
+    const candidates = bases.map((b) => `${origin}${b}/api/dives`);
     (async () => {
       for (const path of candidates) {
         try {
-          const res = await fetch(path);
+          const res = await fetch(path, { cache: 'no-store' });
           if (!res.ok) continue;
           const d = await res.json();
           if (Array.isArray(d.items) && d.items.length) {
