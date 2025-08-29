@@ -1,6 +1,7 @@
 import { joinBasePath, type DiveSiteDetail, FALLBACK_SITES } from '@/lib/webflow';
 import Link from 'next/link';
 import { headers } from 'next/headers';
+import DiveFilterBar from '../../components/DiveFilterBar';
 
 async function fetchSites(): Promise<DiveSiteDetail[]> {
   try {
@@ -17,48 +18,49 @@ async function fetchSites(): Promise<DiveSiteDetail[]> {
   }
 }
 
-export default async function DiveIndexPage({ searchParams }: { searchParams?: Promise<{ country?: string; difficulty?: string }> }) {
+export default async function DiveIndexPage({ searchParams }: { searchParams?: Promise<{ country?: string; difficulty?: string; continent?: string; ocean?: string }> }) {
   const sites = await fetchSites();
   const sp = (await searchParams) || {};
   const country = sp.country?.toLowerCase();
   const difficulty = sp.difficulty?.toLowerCase();
+  const continent = sp.continent?.toLowerCase();
+  const ocean = sp.ocean?.toLowerCase();
   const filtered = sites.filter((s) => {
+    const sDiff = (s.difficulty || '').toLowerCase();
     const okCountry = country ? (s.country || '').toLowerCase() === country : true;
-    const okDiff = difficulty ? (s.difficulty || '').toLowerCase() === difficulty : true;
-    return okCountry && okDiff;
+    const okDiff = difficulty ? sDiff === difficulty || sDiff.startsWith(difficulty) : true;
+    const okCont = continent ? inferContinent(s.lat, s.lng).toLowerCase() === continent : true;
+    const okOcean = ocean ? inferOcean(s.lat, s.lng).toLowerCase() === ocean : true;
+    return okCountry && okDiff && okCont && okOcean;
   });
 
-  const countries = Array.from(new Set(sites.map((s) => s.country).filter(Boolean))) as string[];
-  countries.sort((a, b) => a.localeCompare(b));
-  const difficulties = Array.from(new Set(sites.map((s) => s.difficulty).filter(Boolean))) as string[];
+  function sitePassesFilters(s: DiveSiteDetail, skip: 'difficulty' | 'ocean' | 'continent' | 'country' | null): boolean {
+    const okDiff = skip === 'difficulty' ? true : (difficulty ? (s.difficulty || '').toLowerCase() === difficulty : true);
+    const okOcean = skip === 'ocean' ? true : (ocean ? inferOcean(s.lat, s.lng).toLowerCase() === ocean : true);
+    const okCont = skip === 'continent' ? true : (continent ? inferContinent(s.lat, s.lng).toLowerCase() === continent : true);
+    const okCountry = skip === 'country' ? true : (country ? (s.country || '').toLowerCase() === country : true);
+    return okDiff && okOcean && okCont && okCountry;
+  }
+
+  const difficulties = Array.from(new Set(sites.filter((s) => sitePassesFilters(s, 'difficulty')).map((s) => s.difficulty).filter(Boolean))) as string[];
   difficulties.sort((a, b) => String(a).localeCompare(String(b)));
+
+  const oceans = Array.from(new Set(sites.filter((s) => sitePassesFilters(s, 'ocean')).map((s) => inferOcean(s.lat, s.lng))));
+  oceans.sort((a, b) => a.localeCompare(b));
+
+  const continents = Array.from(new Set(sites.filter((s) => sitePassesFilters(s, 'continent')).map((s) => inferContinent(s.lat, s.lng))));
+  continents.sort((a, b) => a.localeCompare(b));
+
+  const countries = Array.from(new Set(sites.filter((s) => sitePassesFilters(s, 'country')).map((s) => s.country).filter(Boolean))) as string[];
+  countries.sort((a, b) => a.localeCompare(b));
 
   return (
     <main className="dg-container">
       <h1 className="dg-title">Dive Sites</h1>
-      <form className="dg-filters" method="get">
-        <div>
-          <label htmlFor="country">Country</label>
-          <select id="country" name="country" defaultValue={country || ''}>
-            <option value="">All</option>
-            {countries.map((c) => (
-              <option key={c} value={c!.toLowerCase()}>{c}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="difficulty">Difficulty</label>
-          <select id="difficulty" name="difficulty" defaultValue={difficulty || ''}>
-            <option value="">All</option>
-            {difficulties.map((d) => (
-              <option key={d} value={String(d).toLowerCase()}>{d}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{alignSelf:'end'}}>
-          <button className="dg-btn" type="submit">Filter</button>
-        </div>
-      </form>
+      <DiveFilterBar
+        sites={sites}
+        initial={{ difficulty, ocean, continent, country }}
+      />
       <ul className="dg-grid">
         {filtered.length === 0 ? (
           <li className="dg-card" style={{gridColumn: '1 / -1'}}>
@@ -89,6 +91,26 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
       </ul>
     </main>
   );
+}
+
+function inferContinent(lat: number, lng: number): string {
+  if (lat < -60) return 'Antarctica';
+  if (lat > 35 && lat < 72 && lng > -25 && lng < 45) return 'Europe';
+  if (lat > -35 && lat < 37 && lng > -20 && lng < 55) return 'Africa';
+  if (lat > 0 && lng > 45 && lng <= 180) return 'Asia';
+  if (lat > -50 && lat < 10 && (lng > 110 || lng < -150)) return 'Oceania';
+  if (lat < 12 && lng > -90 && lng < -30) return 'South America';
+  if (lat > 0 && lng > -170 && lng < -30) return 'North America';
+  return 'Other';
+}
+
+function inferOcean(lat: number, lng: number): string {
+  if (lat > 66) return 'Arctic Ocean';
+  if (lat < -60) return 'Southern Ocean';
+  const lon = ((lng + 540) % 360) - 180;
+  if (lon > -70 && lon < 20) return 'Atlantic Ocean';
+  if (lon >= 20 && lon < 150) return 'Indian Ocean';
+  return 'Pacific Ocean';
 }
 
 
