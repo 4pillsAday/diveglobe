@@ -10,17 +10,25 @@ type Props = {
 };
 
 export default function FlightLink({ destIata, destLat, destLng }: Props) {
-  const destBest = destIata || findNearestAirport(destLat, destLng)?.iata || `${destLat},${destLng}`;
-  const [href, setHref] = useState<string>(`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${destBest}`)}`);
+  const dIata = destIata || findNearestAirport(destLat, destLng)?.iata;
+  const [href, setHref] = useState<string>(
+    dIata
+      ? `https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${dIata}`)}`
+      : `https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${destLat},${destLng}`)}`
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined' || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const oIata = findNearestAirport(pos.coords.latitude, pos.coords.longitude)?.iata;
-        const origin = oIata || `${pos.coords.latitude.toFixed(3)},${pos.coords.longitude.toFixed(3)}`;
-        const dIata = destIata || findNearestAirport(destLat, destLng)?.iata || `${destLat},${destLng}`;
-        setHref(`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${origin} to ${dIata}`)}`);
+        const dIata = destIata || findNearestAirport(destLat, destLng)?.iata;
+        if (oIata && dIata) {
+          // Use query mode with explicit IATA on both ends for more reliable parsing
+          setHref(`https://www.google.com/travel/flights?q=${encodeURIComponent(`${oIata} to ${dIata}`)}`);
+        } else if (dIata) {
+          setHref(`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${dIata}`)}`);
+        }
       },
       () => {
         // ignore and keep default
