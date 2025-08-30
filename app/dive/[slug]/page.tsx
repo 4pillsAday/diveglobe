@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { findNearestAirport } from '@/lib/airports-lite';
 import FlightLink from '../../../components/FlightLink';
 import AccommodationLink from '../../../components/AccommodationLink';
+import GoogleSiteMap from '../../../components/GoogleSiteMap';
 
 async function fetchSite(slug: string): Promise<DiveSiteDetail | null> {
   try {
@@ -40,6 +41,10 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
 
   return (
     <main className="dg-container dg-detail">
+      {/** Build a Google Maps embed URL that forces English and centers on the site **/}
+      {(() => {
+        return null;
+      })()}
       <div className="dg-hero">
         <div className="dg-hero-text">
           <h1 className="dg-title">{site.name}</h1>
@@ -81,21 +86,59 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
       </section>
 
       <section className="dg-mini-map">
-        <iframe
-          title="map"
-          className="dg-iframe"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=${site.lng-0.5}%2C${site.lat-0.3}%2C${site.lng+0.5}%2C${site.lat+0.3}&layer=mapnik&marker=${site.lat}%2C${site.lng}`}
-        />
+        {process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY ? (
+          <GoogleSiteMap lat={site.lat} lng={site.lng} name={site.name} />
+        ) : (
+          (() => {
+            const query = `dive shop near ${site.lat},${site.lng}`;
+            const zoom = 12;
+            const src = `https://www.google.com/maps?hl=en&output=embed&ll=${site.lat},${site.lng}&z=${zoom}&q=${encodeURIComponent(query)}`;
+            return (
+              <iframe
+                title="Nearby dive shops"
+                className="dg-iframe"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={src}
+              />
+            );
+          })()
+        )}
         <div style={{marginTop: 8}}>
           <FlightLink destIata={site.nearestAirport} destLat={site.lat} destLng={site.lng} />
           <span style={{ marginLeft: 8 }} />
           <AccommodationLink name={site.name} country={site.country} lat={site.lat} lng={site.lng} />
+          <span style={{ marginLeft: 8 }} />
+          <a
+            className="dg-btn"
+            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${site.name} ${site.country ?? ''} scuba diving`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >Watch on YouTube</a>
+          {site.country ? (
+            <>
+              <span style={{ marginLeft: 8 }} />
+              <a
+                className="dg-btn"
+                href={`https://www.liveaboard.com/diving/search/${slugifyCountry(site.country)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >Liveaboard trips</a>
+            </>
+          ) : null}
         </div>
       </section>
     </main>
   );
+}
+
+function slugifyCountry(country: string): string {
+  return country
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
 }
 
 
