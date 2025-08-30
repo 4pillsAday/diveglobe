@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { FALLBACK_SITES, normalizeItem, type DiveSiteDetail } from '@/lib/webflow';
+import { findNearestAirport } from '@/lib/airports-lite';
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -13,8 +14,12 @@ export async function GET(req: Request) {
   const collectionId = process.env.DIVE_COLLECTION_ID;
 
   if (!token || !collectionId) {
-    const item = FALLBACK_SITES.find((s) => s.slug === slug);
-    if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const src = FALLBACK_SITES.find((s) => s.slug === slug);
+    if (!src) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const item: DiveSiteDetail = {
+      ...src,
+      nearestAirport: src.nearestAirport || findNearestAirport(src.lat, src.lng)?.iata,
+    };
     return NextResponse.json({ item });
   }
 
@@ -31,8 +36,12 @@ export async function GET(req: Request) {
     const items: DiveSiteDetail[] = Array.isArray(data.items)
       ? (data.items.map(normalizeItem).filter(Boolean) as DiveSiteDetail[])
       : [];
-    const item = items.find((i: DiveSiteDetail) => i.slug === slug);
-    if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const found = items.find((i: DiveSiteDetail) => i.slug === slug) || FALLBACK_SITES.find((s) => s.slug === slug);
+    if (!found) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const item: DiveSiteDetail = {
+      ...found,
+      nearestAirport: found.nearestAirport || findNearestAirport(found.lat, found.lng)?.iata,
+    };
     return NextResponse.json({ item });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error';

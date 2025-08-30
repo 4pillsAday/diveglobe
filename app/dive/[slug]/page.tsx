@@ -1,9 +1,16 @@
 import Image from 'next/image';
 import { joinBasePath, type DiveSiteDetail, FALLBACK_SITES } from '@/lib/webflow';
+import { headers } from 'next/headers';
+import { findNearestAirport } from '@/lib/airports-lite';
+import FlightLink from '../../../components/FlightLink';
 
 async function fetchSite(slug: string): Promise<DiveSiteDetail | null> {
   try {
-    const res = await fetch(joinBasePath(`/api/dives/${slug}`), { cache: 'no-store' });
+    const h = await headers();
+    const host = h.get('x-forwarded-host') || h.get('host') || 'localhost:3000';
+    const proto = (h.get('x-forwarded-proto') || 'http').split(',')[0];
+    const url = `${proto}://${host}${joinBasePath(`/api/dives/${slug}`)}`;
+    const res = await fetch(url, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       return data.item ?? null;
@@ -11,7 +18,11 @@ async function fetchSite(slug: string): Promise<DiveSiteDetail | null> {
   } catch {}
   // Fallback to local dataset
   const local = FALLBACK_SITES.find((s) => s.slug === slug) || null;
-  return local;
+  if (!local) return null;
+  return {
+    ...local,
+    nearestAirport: local.nearestAirport || findNearestAirport(local.lat, local.lng)?.iata,
+  };
 }
 
 export default async function DiveDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -54,6 +65,9 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
           {site.depth != null ? (
             <div><span className="dg-spec-label">Typical depth</span><span>{site.depth} m</span></div>
           ) : null}
+          {site.nearestAirport ? (
+            <div><span className="dg-spec-label">Nearest airport</span><span>{site.nearestAirport}</span></div>
+          ) : null}
         </div>
         {site.highlights && site.highlights.length ? (
           <div className="dg-highlights">
@@ -73,6 +87,9 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
           referrerPolicy="no-referrer-when-downgrade"
           src={`https://www.openstreetmap.org/export/embed.html?bbox=${site.lng-0.5}%2C${site.lat-0.3}%2C${site.lng+0.5}%2C${site.lat+0.3}&layer=mapnik&marker=${site.lat}%2C${site.lng}`}
         />
+        <div style={{marginTop: 8}}>
+          <FlightLink destIata={site.nearestAirport} destLat={site.lat} destLng={site.lng} />
+        </div>
       </section>
     </main>
   );
