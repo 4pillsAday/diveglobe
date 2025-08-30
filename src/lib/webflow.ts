@@ -12,6 +12,7 @@ export type DiveSiteDetail = {
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   description?: string;
   imageUrl?: string;
+  nearestAirport?: string;
 };
 
 type WebflowItem = {
@@ -37,6 +38,8 @@ type WebflowItem = {
     highlights?: string[] | string;
     image?: { url?: string } | string;
     imageUrl?: string;
+    nearest_airport?: string;
+    nearestAirport?: string;
   };
 };
 
@@ -93,6 +96,11 @@ export function normalizeItem(item: WebflowItem): DiveSiteDetail | null {
   const difficulty = toDifficulty(f.difficulty);
   const description = f.description || undefined;
   const highlights = toArrayOfStrings(f.highlights);
+  const fAny = f as { nearest_airport?: unknown; nearestAirport?: unknown };
+  const nearestAirportRaw = fAny.nearest_airport ?? fAny.nearestAirport ?? undefined;
+  const nearestAirport = typeof nearestAirportRaw === 'string'
+    ? nearestAirportRaw.trim().toUpperCase()
+    : undefined;
 
   let imageUrl: string | undefined = undefined;
   const image = f.image ?? f.imageUrl;
@@ -117,6 +125,7 @@ export function normalizeItem(item: WebflowItem): DiveSiteDetail | null {
     difficulty,
     description,
     imageUrl,
+    nearestAirport,
   };
 }
 

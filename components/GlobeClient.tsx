@@ -109,6 +109,28 @@ export default function GlobeClient() {
     })();
   }, []);
 
+  // Center globe on user's approximate location at start (best-effort)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !navigator.geolocation) return;
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        const globe = globeRef.current;
+        if (!globe) return;
+        const { latitude, longitude } = pos.coords;
+        try {
+          globe.pointOfView({ lat: latitude, lng: longitude, altitude: 1.4 }, 1200);
+        } catch {}
+      },
+      () => {
+        // ignore errors; keep default view
+      },
+      { enableHighAccuracy: false, timeout: 3000, maximumAge: 600000 }
+    );
+    return () => { cancelled = true; };
+  }, []);
+
   function inferContinent(lat: number, lng: number): string {
     if (lat < -60) return 'Antarctica';
     if (lat > 35 && lat < 72 && lng > -25 && lng < 45) return 'Europe';

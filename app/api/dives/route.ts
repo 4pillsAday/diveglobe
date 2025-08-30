@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
-import { normalizeItem, FALLBACK_SITES } from '@/lib/webflow';
+import { normalizeItem, FALLBACK_SITES, type DiveSiteDetail } from '@/lib/webflow';
+import { findNearestAirport } from '@/lib/airports-lite';
 
 export async function GET() {
   const token = process.env.WEBFLOW_API_TOKEN;
   const collectionId = process.env.DIVE_COLLECTION_ID;
 
   if (!token || !collectionId) {
-    return NextResponse.json({ items: FALLBACK_SITES });
+    const items = FALLBACK_SITES.map((s) => ({
+      ...s,
+      nearestAirport: s.nearestAirport || findNearestAirport(s.lat, s.lng)?.iata,
+    }));
+    return NextResponse.json({ items });
   }
 
   try {
@@ -20,11 +25,15 @@ export async function GET() {
       return NextResponse.json({ items: FALLBACK_SITES });
     }
     const data = await res.json();
-    const items = Array.isArray(data.items)
-      ? data.items.map(normalizeItem).filter(Boolean)
+    const itemsRaw: DiveSiteDetail[] = Array.isArray(data.items)
+      ? (data.items.map(normalizeItem).filter(Boolean) as DiveSiteDetail[])
       : [];
-    // If CMS has no items, fallback to local
-    return NextResponse.json({ items: items.length ? items : FALLBACK_SITES });
+    const baseList: DiveSiteDetail[] = itemsRaw.length ? itemsRaw : FALLBACK_SITES;
+    const items: DiveSiteDetail[] = baseList.map((s: DiveSiteDetail) => ({
+      ...s,
+      nearestAirport: s.nearestAirport || findNearestAirport(s.lat, s.lng)?.iata,
+    }));
+    return NextResponse.json({ items });
   } catch {
     // On any unexpected error, return fallback so UI stays populated
     return NextResponse.json({ items: FALLBACK_SITES });
