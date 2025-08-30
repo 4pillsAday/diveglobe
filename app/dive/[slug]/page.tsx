@@ -3,6 +3,7 @@ import { joinBasePath, type DiveSiteDetail, FALLBACK_SITES } from '@/lib/webflow
 import { headers } from 'next/headers';
 import { findNearestAirport } from '@/lib/airports-lite';
 import FlightLink from '../../../components/FlightLink';
+import AccommodationLink from '../../../components/AccommodationLink';
 
 async function fetchSite(slug: string): Promise<DiveSiteDetail | null> {
   try {
@@ -89,6 +90,8 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
         />
         <div style={{marginTop: 8}}>
           <FlightLink destIata={site.nearestAirport} destLat={site.lat} destLng={site.lng} />
+          <span style={{ marginLeft: 8 }} />
+          <AccommodationLink name={site.name} country={site.country} lat={site.lat} lng={site.lng} />
         </div>
       </section>
     </main>
