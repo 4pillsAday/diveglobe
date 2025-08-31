@@ -15,6 +15,7 @@ type DiveSite = {
   country?: string;
   depth?: number | null;
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced' | string;
+  diveTypes?: string[];
 };
 
 type PointData = {
@@ -78,6 +79,7 @@ export default function GlobeClient() {
   const [continentFilter, setContinentFilter] = useState<string>('');
   const [countryFilter, setCountryFilter] = useState<string>('');
   const [oceanFilter, setOceanFilter] = useState<string>('');
+  const [diveTypeFilter, setDiveTypeFilter] = useState<string>('');
   const router = useRouter();
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
 
@@ -152,13 +154,14 @@ export default function GlobeClient() {
   }
 
   // Compute available option sets based on other selected filters
-  function sitePassesFilters(s: DiveSite, skip: 'country' | 'continent' | 'ocean' | 'difficulty' | null): boolean {
+  function sitePassesFilters(s: DiveSite, skip: 'country' | 'continent' | 'ocean' | 'difficulty' | 'divetype' | null): boolean {
     const d = String(s.difficulty || '').toLowerCase();
     const passDiff = skip === 'difficulty' ? true : (difficultyFilter ? d.startsWith(difficultyFilter) : true);
     const passCountry = skip === 'country' ? true : (countryFilter ? (s.country || '').toLowerCase() === countryFilter : true);
     const passCont = skip === 'continent' ? true : (continentFilter ? inferContinent(s.lat, s.lng).toLowerCase() === continentFilter : true);
     const passOcean = skip === 'ocean' ? true : (oceanFilter ? inferOcean(s.lat, s.lng).toLowerCase() === oceanFilter : true);
-    return passDiff && passCountry && passCont && passOcean;
+    const passType = skip === 'divetype' ? true : (diveTypeFilter ? (s.diveTypes || []).map((t)=>t.toLowerCase()).includes(diveTypeFilter) : true);
+    return passDiff && passCountry && passCont && passOcean && passType;
   }
 
   const availableCountries = useMemo(() => {
@@ -185,8 +188,9 @@ export default function GlobeClient() {
     const passCountry = countryFilter ? (s.country || '').toLowerCase() === countryFilter : true;
     const passCont = continentFilter ? inferContinent(s.lat, s.lng).toLowerCase() === continentFilter : true;
     const passOcean = oceanFilter ? inferOcean(s.lat, s.lng).toLowerCase() === oceanFilter : true;
-    return passDiff && passCountry && passCont && passOcean;
-  }), [sites, difficultyFilter, countryFilter, continentFilter, oceanFilter]);
+    const passType = diveTypeFilter ? (s.diveTypes || []).map((t)=>t.toLowerCase()).includes(diveTypeFilter) : true;
+    return passDiff && passCountry && passCont && passOcean && passType;
+  }), [sites, difficultyFilter, countryFilter, continentFilter, oceanFilter, diveTypeFilter]);
 
   const points = useMemo(() => filteredSites.map(s => ({
     lat: s.lat,
@@ -292,6 +296,15 @@ export default function GlobeClient() {
             </select>
           </div>
           <div>
+            <label htmlFor="dtype" className="dg-spec-label">Dive type</label>
+            <select id="dtype" value={diveTypeFilter} onChange={(e) => setDiveTypeFilter(e.target.value)}>
+              <option value="">All</option>
+              {Array.from(new Set(sites.flatMap((s)=> (s.diveTypes || []) as string[]))).sort((a,b)=>a.localeCompare(b)).map((t)=> (
+                <option key={t} value={t.toLowerCase()}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label htmlFor="cont" className="dg-spec-label">Continent</label>
             <select id="cont" value={continentFilter} onChange={(e) => setContinentFilter(e.target.value)}>
               <option value="">All</option>
@@ -310,7 +323,7 @@ export default function GlobeClient() {
             </select>
           </div>
           <div style={{alignSelf:'end'}}>
-            <button type="button" className="dg-btn" onClick={() => { setDifficultyFilter(''); setContinentFilter(''); setOceanFilter(''); setCountryFilter(''); }}>Clear</button>
+            <button type="button" className="dg-btn" onClick={() => { setDifficultyFilter(''); setContinentFilter(''); setOceanFilter(''); setCountryFilter(''); setDiveTypeFilter(''); }}>Clear</button>
           </div>
         </div>
       </div>
