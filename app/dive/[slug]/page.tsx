@@ -68,8 +68,11 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
           {site.difficulty ? (
             <div><span className="dg-spec-label">Difficulty</span><span>{site.difficulty}</span></div>
           ) : null}
-          {site.depth != null ? (
-            <div><span className="dg-spec-label">Typical depth</span><span>{site.depth} m</span></div>
+          {site.maxDepth != null ? (
+            <div><span className="dg-spec-label">Max depth</span><span>{site.maxDepth} m</span></div>
+          ) : null}
+          {site.avgDepth != null ? (
+            <div><span className="dg-spec-label">Avg depth</span><span>{site.avgDepth} m</span></div>
           ) : null}
           {site.nearestAirport ? (
             <div><span className="dg-spec-label">Nearest airport</span><span>{site.nearestAirport}</span></div>
@@ -79,6 +82,13 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
           <div className="dg-highlights">
             {site.highlights.map((h) => (
               <span key={h} className="dg-chip">{h}</span>
+            ))}
+          </div>
+        ) : null}
+        {site.diveTypes && site.diveTypes.length ? (
+          <div className="dg-highlights">
+            {site.diveTypes.map((t) => (
+              <span key={`type-${t}`} className="dg-chip">{t}</span>
             ))}
           </div>
         ) : null}
