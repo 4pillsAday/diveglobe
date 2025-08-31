@@ -65,6 +65,9 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
           {site.waterTemp ? (
             <div><span className="dg-spec-label">Water temp</span><span>{site.waterTemp}</span></div>
           ) : null}
+          {site.diveTypes && site.diveTypes.length ? (
+            <div><span className="dg-spec-label">Dive types</span><span>{site.diveTypes.join(', ')}</span></div>
+          ) : null}
           {site.difficulty ? (
             <div><span className="dg-spec-label">Difficulty</span><span>{site.difficulty}</span></div>
           ) : null}

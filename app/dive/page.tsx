@@ -18,7 +18,7 @@ async function fetchSites(): Promise<DiveSiteDetail[]> {
   }
 }
 
-export default async function DiveIndexPage({ searchParams }: { searchParams?: Promise<{ country?: string; difficulty?: string; continent?: string; ocean?: string }> }) {
+export default async function DiveIndexPage({ searchParams }: { searchParams?: Promise<{ country?: string; difficulty?: string; continent?: string; ocean?: string; divetype?: string }> }) {
   const sites = await fetchSites();
   const sp = (await searchParams) || {};
   const country = sp.country?.toLowerCase();
@@ -31,7 +31,9 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
     const okDiff = difficulty ? sDiff === difficulty || sDiff.startsWith(difficulty) : true;
     const okCont = continent ? inferContinent(s.lat, s.lng).toLowerCase() === continent : true;
     const okOcean = ocean ? inferOcean(s.lat, s.lng).toLowerCase() === ocean : true;
-    return okCountry && okDiff && okCont && okOcean;
+    const typeParam = sp.divetype?.toLowerCase();
+    const okType = typeParam ? (s.diveTypes || []).map((t)=>t.toLowerCase()).includes(typeParam) : true;
+    return okCountry && okDiff && okCont && okOcean && okType;
   });
   const ordered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -60,7 +62,7 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
       <h1 className="dg-title">Dive Sites</h1>
       <DiveFilterBar
         sites={sites}
-        initial={{ difficulty, ocean, continent, country }}
+        initial={{ difficulty, ocean, continent, country, diveType: sp.divetype?.toLowerCase() }}
       />
       <ul className="dg-grid">
         {ordered.length === 0 ? (
