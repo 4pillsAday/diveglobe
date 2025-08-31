@@ -5,7 +5,10 @@ export type DiveSiteDetail = {
   lat: number;
   lng: number;
   country?: string;
+  // Deprecated: use maxDepth/avgDepth instead
   depth?: number | null;
+  maxDepth?: number | null;
+  avgDepth?: number | null;
   bestTime?: string;
   waterTemp?: string;
   highlights?: string[];
@@ -13,6 +16,7 @@ export type DiveSiteDetail = {
   description?: string;
   imageUrl?: string;
   nearestAirport?: string;
+  diveTypes?: string[]; // e.g., ['Scuba', 'Freedive', 'Snorkel']
 };
 
 type WebflowItem = {
@@ -29,6 +33,11 @@ type WebflowItem = {
     country?: string;
     region?: string;
     depth?: string | number | null;
+    maxDepth?: string | number | null;
+    max_depth?: string | number | null;
+    avgDepth?: string | number | null;
+    averageDepth?: string | number | null;
+    avg_depth?: string | number | null;
     bestTime?: string;
     best_time?: string;
     waterTemp?: string;
@@ -40,6 +49,8 @@ type WebflowItem = {
     imageUrl?: string;
     nearest_airport?: string;
     nearestAirport?: string;
+    diveTypes?: string[] | string;
+    dive_types?: string[] | string;
   };
 };
 
@@ -79,8 +90,31 @@ function toArrayOfStrings(value: unknown): string[] | undefined {
   return undefined;
 }
 
+function normalizeDiveTypes(value: unknown): string[] | undefined {
+  const arr = toArrayOfStrings(value);
+  if (!arr) return undefined;
+  return arr.map((s) => {
+    const t = s.toLowerCase();
+    if (t.includes('free')) return 'Freedive';
+    if (t.includes('snork')) return 'Snorkel';
+    if (t.includes('scuba')) return 'Scuba';
+    if (t.includes('tech')) return 'Technical';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  });
+}
+
+type FieldDataExtended = NonNullable<WebflowItem['fieldData']> & {
+  maxDepth?: string | number | null;
+  max_depth?: string | number | null;
+  avgDepth?: string | number | null;
+  averageDepth?: string | number | null;
+  avg_depth?: string | number | null;
+  diveTypes?: string[] | string;
+  dive_types?: string[] | string;
+};
+
 export function normalizeItem(item: WebflowItem): DiveSiteDetail | null {
-  const f: NonNullable<WebflowItem['fieldData']> = (item?.fieldData ?? {}) as NonNullable<WebflowItem['fieldData']>;
+  const f: FieldDataExtended = (item?.fieldData ?? {}) as FieldDataExtended;
   const latRaw = f.latitude ?? f.lat;
   const lngRaw = f.longitude ?? f.lng;
   const lat = parseFloat(String(latRaw));
@@ -90,12 +124,15 @@ export function normalizeItem(item: WebflowItem): DiveSiteDetail | null {
   const name = f.name ?? f.title ?? 'Unnamed site';
   const slug = (item.slug as string | undefined) || f.slug || createSlug(String(name));
   const depth = toNumberOrNull(f.depth ?? null);
+  const maxDepth = toNumberOrNull(f.maxDepth ?? f.max_depth ?? null);
+  const avgDepth = toNumberOrNull(f.avgDepth ?? f.averageDepth ?? f.avg_depth ?? null);
   const country = f.country || f.region || undefined;
   const bestTime = f.bestTime || f.best_time || undefined;
   const waterTemp = f.waterTemp || f.water_temp || undefined;
   const difficulty = toDifficulty(f.difficulty);
   const description = f.description || undefined;
   const highlights = toArrayOfStrings(f.highlights);
+  const diveTypes = normalizeDiveTypes(f.diveTypes ?? f.dive_types);
   const fAny = f as { nearest_airport?: unknown; nearestAirport?: unknown };
   const nearestAirportRaw = fAny.nearest_airport ?? fAny.nearestAirport ?? undefined;
   const nearestAirport = typeof nearestAirportRaw === 'string'
@@ -119,6 +156,8 @@ export function normalizeItem(item: WebflowItem): DiveSiteDetail | null {
     lng,
     country,
     depth,
+    maxDepth: maxDepth ?? null,
+    avgDepth: (avgDepth ?? null) ?? (depth ?? null),
     bestTime,
     waterTemp,
     highlights,
@@ -126,6 +165,7 @@ export function normalizeItem(item: WebflowItem): DiveSiteDetail | null {
     description,
     imageUrl,
     nearestAirport,
+    diveTypes,
   };
 }
 
@@ -148,7 +188,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–30°C',
     highlights: ['Mantas', 'Coral gardens', 'Macro'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 10,
     depth: 5,
+    diveTypes: ['Scuba', 'Snorkel', 'Freedive'],
     description: 'Biodiversity hotspot with pristine reefs and frequent manta encounters.',
     imageUrl: undefined,
   },
@@ -163,7 +206,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '22–28°C',
     highlights: ['Wreck', 'Giant groupers', 'Eagle rays'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 22,
     depth: 28,
+    diveTypes: ['Scuba'],
     description: 'Historic wreck in the Coral Sea teeming with pelagics and macro life.',
   },
   {
@@ -177,7 +223,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–29°C',
     highlights: ['Soft corals', 'Whale sharks (seasonal)'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Iconic Andaman Sea pinnacle with purple soft corals and rich fish life.',
   },
   {
@@ -191,7 +240,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '22–28°C',
     highlights: ['Hammerheads', 'Walls'],
     difficulty: 'Advanced',
+    maxDepth: 30,
+    avgDepth: 25,
     depth: 25,
+    diveTypes: ['Scuba'],
     description: 'Offshore Red Sea reef with exhilarating drifts and oceanic pelagics.',
   },
   {
@@ -205,7 +257,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '22–28°C',
     highlights: ['Walls', 'Abundant fish'],
     difficulty: 'Beginner',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Two spectacular reefs with dramatic walls and prolific fish life.',
   },
   {
@@ -219,7 +274,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '21–28°C',
     highlights: ['Blue hole', 'Sheer drop offs'],
     difficulty: 'Intermediate',
+    maxDepth: 55,
+    avgDepth: 25,
     depth: 30,
+    diveTypes: ['Scuba', 'Freedive'],
     description: 'Famous sinkhole with a vertical abyss and vibrant reef life nearby.',
   },
   {
@@ -233,7 +291,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–28°C',
     highlights: ['Wreck', 'Clear viz'],
     difficulty: 'Beginner',
+    maxDepth: 20,
+    avgDepth: 15,
     depth: 20,
+    diveTypes: ['Scuba', 'Snorkel'],
     description: 'Artificial reef wreck with easy access and excellent visibility.',
   },
   {
@@ -247,7 +308,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–29°C',
     highlights: ['Manta cleaning station', 'Sharks'],
     difficulty: 'Intermediate',
+    maxDepth: 25,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Current-swept channel with manta cleaning stations and reef sharks.',
   },
   {
@@ -261,7 +325,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Thresher sharks'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 25,
     depth: 25,
+    diveTypes: ['Scuba'],
     description: 'Offshore seamount famed for sunrise encounters with thresher sharks.',
   },
   {
@@ -275,7 +342,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Walls', 'Sharks', 'Turtles'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 20,
     depth: 20,
+    diveTypes: ['Scuba'],
     description: 'Second-largest contiguous coral reef in the world with vibrant walls.',
   },
   {
@@ -289,7 +359,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['WWII wrecks'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 25,
     depth: 25,
+    diveTypes: ['Scuba'],
     description: 'A cluster of WWII shipwrecks covered in corals around Busuanga/Coron.',
   },
   {
@@ -303,7 +376,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Macro', 'Critters'],
     difficulty: 'Beginner',
+    maxDepth: 18,
+    avgDepth: 12,
     depth: 15,
+    diveTypes: ['Scuba'],
     description: 'Macro photography mecca with nudibranchs, frogfish, and flamboyant cuttlefish.',
   },
   {
@@ -317,7 +393,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Drifts', 'Macro', 'Reefs'],
     difficulty: 'Beginner',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba', 'Freedive', 'Snorkel'],
     description: 'Varied dive sites with healthy reefs, muck dives, and channel drifts.',
   },
   {
@@ -331,7 +410,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–29°C',
     highlights: ['Pristine reefs', 'Walls'],
     difficulty: 'Beginner',
+    maxDepth: 25,
+    avgDepth: 15,
     depth: 15,
+    diveTypes: ['Scuba', 'Snorkel'],
     description: 'Remote protected reefs with exceptional coral coverage and easy conditions.',
   },
   {
@@ -345,7 +427,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–28°C',
     highlights: ['Muck', 'Rare critters'],
     difficulty: 'Beginner',
+    maxDepth: 20,
+    avgDepth: 12,
     depth: 12,
+    diveTypes: ['Scuba'],
     description: 'Black-sand muck diving capital renowned for unusual macro life.',
   },
   {
@@ -359,7 +444,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '25–28°C',
     highlights: ['Clear viz', 'Critters', 'Reefs'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Off-the-beaten-path destination with clear waters and diverse sites.',
   },
   {
@@ -373,7 +461,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–29°C',
     highlights: ['Hammerheads (seasonal)', 'Walls'],
     difficulty: 'Advanced',
+    maxDepth: 30,
+    avgDepth: 25,
     depth: 25,
+    diveTypes: ['Scuba'],
     description: 'Deep blue walls and seasonal schooling hammerheads on remote crossings.',
   },
   {
@@ -387,7 +478,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Wreck', 'Shallow'],
     difficulty: 'Beginner',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 15,
+    diveTypes: ['Scuba'],
     description: 'Shore-access wreck covered in soft corals and teeming with fish.',
   },
   {
@@ -401,7 +495,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '24–27°C',
     highlights: ['Lava caverns', 'Light beams'],
     difficulty: 'Beginner',
+    maxDepth: 18,
+    avgDepth: 15,
     depth: 15,
+    diveTypes: ['Scuba'],
     description: 'Dramatic lava tubes and caverns with cathedral-like light rays.',
   },
   {
@@ -415,7 +512,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Pillars with corals', 'Shore dive'],
     difficulty: 'Beginner',
+    maxDepth: 15,
+    avgDepth: 12,
     depth: 12,
+    diveTypes: ['Scuba', 'Snorkel'],
     description: 'Iconic shore dive with photogenic pier pillars and abundant fish.',
   },
   {
@@ -429,7 +529,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–28°C',
     highlights: ['Drifts', 'Coral swim-throughs'],
     difficulty: 'Beginner',
+    maxDepth: 25,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Gentle drifts along towering coral formations with crystal visibility.',
   },
   {
@@ -443,7 +546,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Walls', 'Reefs'],
     difficulty: 'Beginner',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Vast atoll with walls, patch reefs, and mangrove nurseries.',
   },
   {
@@ -457,7 +563,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '24–29°C',
     highlights: ['Walls', 'Sharks'],
     difficulty: 'Beginner',
+    maxDepth: 30,
+    avgDepth: 20,
     depth: 20,
+    diveTypes: ['Scuba'],
     description: 'Steep walls and frequent shark sightings in clear blue water.',
   },
   {
@@ -471,7 +580,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '25–28°C',
     highlights: ['Shark dives', 'Soft corals'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Renowned shark encounters and colorful soft coral reefs.',
   },
   {
@@ -485,7 +597,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '25–28°C',
     highlights: ['Walls', 'Reefs', 'Mantas (seasonal)'],
     difficulty: 'Beginner',
+    maxDepth: 25,
+    avgDepth: 15,
     depth: 15,
+    diveTypes: ['Scuba'],
     description: 'One of the world’s largest barrier reefs with healthy walls and bommies.',
   },
   {
@@ -499,7 +614,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–29°C',
     highlights: ['Biodiversity', 'Seamounts'],
     difficulty: 'Intermediate',
+    maxDepth: 25,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Volcanic seamounts with dense fish schools and pristine hard corals.',
   },
   {
@@ -527,7 +645,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '16–22°C',
     highlights: ['Caves', 'Kelp', 'Pelagics (summer)'],
     difficulty: 'Beginner',
+    maxDepth: 30,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba', 'Snorkel'],
     description: 'Marine reserve with arches, kelp forests, and seasonal pelagics.',
   },
   {
@@ -541,7 +662,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '23–27°C',
     highlights: ['Mantas', 'Whale sharks'],
     difficulty: 'Intermediate',
+    maxDepth: 25,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba', 'Snorkel'],
     description: 'Plankton-rich waters attracting giant mantas and whale sharks year-round.',
   },
   {
@@ -555,7 +679,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '20–24°C',
     highlights: ['Mobula rays', 'Blue water'],
     difficulty: 'Advanced',
+    maxDepth: 40,
+    avgDepth: 30,
     depth: 30,
+    diveTypes: ['Scuba'],
     description: 'Offshore seamount with schooling mobulas in warm season.',
   },
   {
@@ -569,7 +696,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–30°C',
     highlights: ['Channels', 'Sharks'],
     difficulty: 'Advanced',
+    maxDepth: 40,
+    avgDepth: 25,
     depth: 25,
+    diveTypes: ['Scuba'],
     description: 'Eastern atoll channel with strong currents and grey reef sharks.',
   },
   {
@@ -583,7 +713,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–29°C',
     highlights: ['Manta aggregation', 'Whale sharks'],
     difficulty: 'Beginner',
+    maxDepth: 5,
+    avgDepth: 3,
     depth: 5,
+    diveTypes: ['Snorkel'],
     description: 'Seasonal plankton blooms bring huge manta aggregations (snorkel-focused).',
   },
   {
@@ -597,7 +730,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Sharks', 'Dolphins', 'Drifts'],
     difficulty: 'Advanced',
+    maxDepth: 30,
+    avgDepth: 20,
     depth: 20,
+    diveTypes: ['Scuba'],
     description: 'High-energy pass with sharks, dolphins, and powerful tidal currents.',
   },
   {
@@ -611,7 +747,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '18–25°C',
     highlights: ['Hammerheads', 'Sea lions'],
     difficulty: 'Advanced',
+    maxDepth: 30,
+    avgDepth: 20,
     depth: 20,
+    diveTypes: ['Scuba'],
     description: 'Exposed volcanic crater with schooling hammerheads and playful sea lions.',
   },
   {
@@ -695,7 +834,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '6–14°C',
     highlights: ['Strong currents', 'Kelp forests'],
     difficulty: 'Advanced',
+    maxDepth: 25,
+    avgDepth: 20,
     depth: 20,
+    diveTypes: ['Scuba', 'Freedive'],
     description: 'World’s strongest tidal current with spectacular marine life in kelp.',
   },
   {
@@ -709,7 +851,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '6–14°C',
     highlights: ['WWI wreck fleet'],
     difficulty: 'Advanced',
+    maxDepth: 45,
+    avgDepth: 30,
     depth: 35,
+    diveTypes: ['Scuba'],
     description: 'Historic scuttled German fleet wrecks in cold, clear waters.',
   },
   {
@@ -723,7 +868,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '16–24°C',
     highlights: ['Groupers', 'Caves'],
     difficulty: 'Beginner',
+    maxDepth: 25,
+    avgDepth: 18,
     depth: 18,
+    diveTypes: ['Scuba', 'Snorkel', 'Freedive'],
     description: 'Mediterranean marine reserve with friendly groupers and caverns.',
   },
   {
@@ -737,7 +885,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '26–29°C',
     highlights: ['Stalactites', 'Deep walls'],
     difficulty: 'Advanced',
+    maxDepth: 40,
+    avgDepth: 25,
     depth: 40,
+    diveTypes: ['Scuba', 'Freedive', 'Snorkel'],
     description: 'Iconic sinkhole offering dramatic deep dive walls and limestone formations.',
   },
   {
@@ -751,7 +902,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '24–29°C',
     highlights: ['Coral bommies', 'Turtles'],
     difficulty: 'Beginner',
+    maxDepth: 18,
+    avgDepth: 10,
     depth: 10,
+    diveTypes: ['Scuba', 'Snorkel'],
     description: 'World’s largest reef system with abundant marine life and easy conditions.',
   },
   {
@@ -765,7 +919,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–30°C',
     highlights: ['Barracuda tornado', 'Turtles'],
     difficulty: 'Intermediate',
+    maxDepth: 30,
+    avgDepth: 20,
     depth: 20,
+    diveTypes: ['Scuba'],
     description: 'Famed for massive schools of fish, turtles, and steep walls.',
   },
   {
@@ -779,7 +936,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '18–25°C',
     highlights: ['Hammerheads', 'Whale sharks'],
     difficulty: 'Advanced',
+    maxDepth: 30,
+    avgDepth: 25,
     depth: 25,
+    diveTypes: ['Scuba'],
     description: 'Pelagic action with hammerhead schools and seasonal whale sharks.',
   },
   {
@@ -807,7 +967,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '27–29°C',
     highlights: ['Sharks', 'Strong currents'],
     difficulty: 'Advanced',
+    maxDepth: 30,
+    avgDepth: 20,
     depth: 18,
+    diveTypes: ['Scuba'],
     description: 'Adrenaline-fueled drift diving with grey reef sharks and large schools.',
   },
   {
@@ -835,7 +998,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '22–28°C',
     highlights: ['Oceanic whitetips', 'Wrecks'],
     difficulty: 'Advanced',
+    maxDepth: 40,
+    avgDepth: 30,
     depth: 30,
+    diveTypes: ['Scuba'],
     description: 'Remote offshore reefs with sharks and spectacular walls and wrecks.',
   },
   {
@@ -849,7 +1015,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '24–27°C',
     highlights: ['Tiger sharks', 'Clear sand flats'],
     difficulty: 'Beginner',
+    maxDepth: 12,
+    avgDepth: 10,
     depth: 12,
+    diveTypes: ['Scuba'],
     description: 'Shallow sandy area famous for reliable tiger shark encounters.',
   },
   {
@@ -877,7 +1046,10 @@ export const FALLBACK_SITES: DiveSiteDetail[] = [
     waterTemp: '2–4°C',
     highlights: ['Clear glacial water', 'Continental rift'],
     difficulty: 'Beginner',
+    maxDepth: 18,
+    avgDepth: 10,
     depth: 18,
+    diveTypes: ['Scuba', 'Snorkel'],
     description: 'Dive between tectonic plates in some of the clearest water on Earth.',
   },
   {

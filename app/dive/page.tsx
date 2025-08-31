@@ -78,10 +78,11 @@ export default async function DiveIndexPage({ searchParams }: { searchParams?: P
                 <h2>{s.name}</h2>
                 {s.country ? <span className="dg-chip">{s.country}</span> : null}
               </div>
-              {s.description ? <p className="dg-desc">{s.description}</p> : null}
+              {s.description ? <p className="dg-desc">{s.description}</p> : <p className="dg-desc" aria-hidden />}
               <div className="dg-meta">
                 {s.difficulty ? <span>Difficulty: {s.difficulty}</span> : null}
-                {s.depth != null ? <span>Depth: {s.depth} m</span> : null}
+                {s.maxDepth != null ? <span>Max: {s.maxDepth} m</span> : null}
+                {s.avgDepth != null ? <span>Avg: {s.avgDepth} m</span> : null}
               </div>
             </div>
             <div className="dg-card-actions">
