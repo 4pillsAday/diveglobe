@@ -87,7 +87,12 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
 
       <section className="dg-mini-map">
         {process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY ? (
-          <GoogleSiteMap lat={site.lat} lng={site.lng} name={site.name} />
+          <GoogleSiteMap
+            lat={site.lat}
+            lng={site.lng}
+            name={site.name}
+            fallbackCenter={site.nearestAirport ? undefined : (findNearestAirport(site.lat, site.lng) ? { lat: findNearestAirport(site.lat, site.lng)!.lat, lng: findNearestAirport(site.lat, site.lng)!.lng } : undefined)}
+          />
         ) : (
           (() => {
             const query = `dive shop near ${site.lat},${site.lng}`;
@@ -104,11 +109,9 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
             );
           })()
         )}
-        <div style={{marginTop: 8}}>
+        <div className="dg-actions">
           <FlightLink destIata={site.nearestAirport} destLat={site.lat} destLng={site.lng} />
-          <span style={{ marginLeft: 8 }} />
           <AccommodationLink name={site.name} country={site.country} lat={site.lat} lng={site.lng} />
-          <span style={{ marginLeft: 8 }} />
           <a
             className="dg-btn"
             href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${site.name} ${site.country ?? ''} scuba diving`)}`}
@@ -116,15 +119,12 @@ export default async function DiveDetailPage({ params }: { params: Promise<{ slu
             rel="noopener noreferrer"
           >Watch on YouTube</a>
           {site.country ? (
-            <>
-              <span style={{ marginLeft: 8 }} />
-              <a
-                className="dg-btn"
-                href={`https://www.liveaboard.com/diving/search/${slugifyCountry(site.country)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >Liveaboard trips</a>
-            </>
+            <a
+              className="dg-btn"
+              href={`https://www.liveaboard.com/diving/search/${slugifyCountry(site.country)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >Liveaboard trips</a>
           ) : null}
         </div>
       </section>

@@ -47,6 +47,10 @@ body.dg-body { margin: 0; background: linear-gradient(120deg, #041424, #062e42, 
 .dg-mini-map { margin: 18px 0; }
 .dg-iframe { width: 100%; height: 320px; border: 1px solid #17304f; border-radius: 10px; }
 
+/* Detail page actions */
+.dg-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.dg-actions .dg-btn { flex: 0 0 auto; }
+
 /* Home overlay filters */
 .dg-overlay { position: fixed; left: 0; right: 0; top: 64px; z-index: 30; display: flex; justify-content: center; pointer-events: none; padding: 0 8px; }
 .dg-filter-row { pointer-events: all; display: flex; flex-wrap: wrap; gap: 8px; background: rgba(6,24,38,0.66); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 8px; max-width: 100%; }
@@ -62,4 +66,6 @@ body.dg-body { margin: 0; background: linear-gradient(120deg, #041424, #062e42, 
   .dg-filters { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 8px; padding-bottom: 4px; }
   .dg-filters > div { min-width: 140px; flex: 0 0 auto; }
   .dg-filters select { width: auto; }
+  .dg-actions { flex-direction: column; align-items: stretch; }
+  .dg-actions .dg-btn { width: 100%; text-align: center; }
 }
