@@ -6,6 +6,7 @@ type Props = {
   lat: number;
   lng: number;
   name: string;
+  fallbackCenter?: { lat: number; lng: number } | null;
 };
 
 // Loads the Google Maps JS API script once
@@ -22,7 +23,7 @@ function useGoogleMaps(apiKey: string, language: string = 'en') {
   }, [apiKey, language]);
 }
 
-export default function GoogleSiteMap({ lat, lng, name }: Props) {
+export default function GoogleSiteMap({ lat, lng, name, fallbackCenter }: Props) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY;
   useGoogleMaps(apiKey ?? '');
   const elRef = useRef<HTMLDivElement>(null);
@@ -66,36 +67,60 @@ export default function GoogleSiteMap({ lat, lng, name }: Props) {
       });
 
       const service = new google.maps.places.PlacesService(map);
-      service.nearbySearch(
-        {
-          location: center,
-          radius: 30000, // 30km
-          keyword: 'dive shop scuba',
-          type: 'store',
-        },
-        (results, status) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK || !results) return;
-          results.forEach((place) => {
-            if (!place.geometry || !place.geometry.location) return;
-            const marker = new google.maps.Marker({
-              map,
-              position: place.geometry.location,
-              title: place.name,
-            });
-            marker.addListener('click', () => {
-              const url = `https://www.google.com/maps/place/?q=place_id:${place.place_id}`;
-              const content = `
-                <div style="min-width:200px">
-                  <div style="font-weight:600;margin-bottom:4px;">${place.name ?? 'Dive shop'}</div>
-                  <a href="${url}" target="_blank" rel="noopener noreferrer">View on Google Maps</a>
-                </div>
-              `;
-              info?.setContent(content);
-              info?.open({ anchor: marker, map });
-            });
+
+      const createMarkers = (results: google.maps.places.PlaceResult[] | null | undefined) => {
+        if (!results) return 0;
+        let count = 0;
+        results.forEach((place) => {
+          if (!place.geometry || !place.geometry.location) return;
+          const marker = new google.maps.Marker({
+            map,
+            position: place.geometry.location,
+            title: place.name,
           });
-        }
-      );
+          marker.addListener('click', () => {
+            const url = `https://www.google.com/maps/place/?q=place_id:${place.place_id}`;
+            const content = `
+              <div style="min-width:200px">
+                <div style="font-weight:600;margin-bottom:4px;">${place.name ?? 'Dive shop'}</div>
+                <a href="${url}" target="_blank" rel="noopener noreferrer">View on Google Maps</a>
+              </div>
+            `;
+            info?.setContent(content);
+            info?.open({ anchor: marker, map });
+          });
+          count += 1;
+        });
+        return count;
+      };
+
+      const doSearch = (loc: google.maps.LatLng) => {
+        service.nearbySearch(
+          {
+            location: loc,
+            rankBy: google.maps.places.RankBy.DISTANCE,
+            keyword: 'scuba diving dive shop dive center dive centre',
+          },
+          (results, status, pagination) => {
+            if (status !== google.maps.places.PlacesServiceStatus.OK) {
+              return;
+            }
+            const added = createMarkers(results);
+            if (added === 0 && fallbackCenter) {
+              const fb = new google.maps.LatLng(fallbackCenter.lat, fallbackCenter.lng);
+              map?.setCenter(fb);
+              doSearch(fb);
+              return;
+            }
+            if (pagination && pagination.hasNextPage) {
+              // Load a second page for more results
+              pagination.nextPage();
+            }
+          }
+        );
+      };
+
+      doSearch(center);
     };
 
     const id = window.setInterval(() => {
@@ -110,7 +135,7 @@ export default function GoogleSiteMap({ lat, lng, name }: Props) {
       map = null;
       info = null;
     };
-  }, [apiKey, lat, lng, name]);
+  }, [apiKey, lat, lng, name, fallbackCenter]);
 
   if (!apiKey) {
     // Caller should render a fallback embed when no key
